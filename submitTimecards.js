@@ -1,8 +1,8 @@
 const { response } = require("express");
 const XlsxPopulate = require('xlsx-populate');
 
-async function getTimecardsFromSyncro() {
-    const APIToken = 'placeholder';
+async function getTimecardsFromSyncro(args) {
+    const APIToken = `${args[2]}`;
     const url = 'https://mcmahantech.syncromsp.com/api/v1/timelogs';
     const headers = new Headers();
     headers.append('Content-Type', 'application/json');
@@ -43,7 +43,6 @@ async function getTimecardsFromSyncro() {
                     minutesWorked += totalMinutesThisEntry;
                 }
             }
-            console.log(minutesWorked)
             pushTimecardsIntoExcel(args, minutesWorked)
         })
         .catch(error => console.error('Error:', error));        
@@ -56,8 +55,9 @@ async function getTimecardsFromSyncro() {
 }
 
 async function pushTimecardsIntoExcel(args, minutesWorked) {
-    const path = args[2];
-    const user = args[1]
+    const path = args[1];
+    const user = args[0];
+    const isHoliday = args[3] === 'Holiday';
     try {
         const workbook = await XlsxPopulate.fromFileAsync(`${path}`)
         const submissionsWorksheet = workbook.sheet('AutomatedSubmissions')
@@ -70,9 +70,10 @@ async function pushTimecardsIntoExcel(args, minutesWorked) {
         });
         let timeWorked = minutesWorked/60;
         let OTWorked = 0;
-        if (40 < timeWorked) {
-            OTWorked += timeWorked - 40;
-            timeWorked = 40;
+        let workWeek = isHoliday ? 32 : 40;
+        if (workWeek < timeWorked) {
+            OTWorked += timeWorked - workWeek;
+            timeWorked = workWeek;
         }
         const rowValues = [user, formattedDate,'Need to do this still',`Clocked Hours`,'Work Hrs.',timeWorked]
         const OTRowValues = [user, formattedDate,'Need to do this still',`Overtime Hours`,'OT Hrs.',OTWorked]
@@ -88,15 +89,14 @@ async function pushTimecardsIntoExcel(args, minutesWorked) {
         workbook.toFileAsync(`${path}`)
     } catch (error) {
         console.error('an error occured: ', error);
-        console.warn('Please contact McMahan TECH internal tooling support')
+        console.warn('Please do not contact McMahan TECH internal tooling support')
         console.warn('This message will dissapear in 20 seconds')
         setTimeout(() => {}, 20000)
     }
 }
 
-// let args = process.argv.slice(2);
-const args = ['4.5', 'Judah Helland', 'C:/Users/judah/Timecards_and_Reimbursements(copy).xlsx']
+let args = process.argv.slice(2);
+// const args = ['Judah Helland', 'C:/Users/judah/Timecards_and_Reimbursements(copy).xlsx', 'placeholder', 'Holiday']
 
-getTimecardsFromSyncro()
-// pushTimecardsIntoExcel(args)
+getTimecardsFromSyncro(args)
 
