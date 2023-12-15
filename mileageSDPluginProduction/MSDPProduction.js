@@ -1,8 +1,4 @@
 const XlsxPopulate = require('xlsx-populate');
- 
-
-
-
 
 async function submitTripMileage(args) {
     console.log(args)
@@ -55,7 +51,10 @@ async function submitTripMileage(args) {
         }
         workbook.toFileAsync(`${path}`);   
     } catch (error) {
-        console.log('error reading doc: ', error)
+        console.error('an error occured: ', error);
+        console.warn('Please do not contact McMahan TECH internal tooling support')
+        console.warn('This message will dissapear in 20 seconds')
+        setTimeout(() => {}, 20000)
     }
 }
 
