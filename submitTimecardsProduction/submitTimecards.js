@@ -1,7 +1,8 @@
 const XlsxPopulate = require('xlsx-populate');
 
 async function getTimecardsFromSyncro(args) {
-    const APIToken = `${args[2]}`;
+    // console.log(args)
+    const APIToken = `${args[3]}`;
     const url = 'https://mcmahantech.syncromsp.com/api/v1/timelogs';
     const headers = new Headers();
     headers.append('Content-Type', 'application/json');
@@ -54,9 +55,9 @@ async function getTimecardsFromSyncro(args) {
 }
 
 async function pushTimecardsIntoExcel(args, minutesWorked) {
-    const path = args[1];
+    const path = args[2];
     const user = args[0];
-    const isHoliday = args[3] === 'Holiday';
+    const numHrsInWorkWeek = args[1];
     try {
         const workbook = await XlsxPopulate.fromFileAsync(`${path}`)
         const submissionsWorksheet = workbook.sheet('AutomatedSubmissions')
@@ -69,13 +70,12 @@ async function pushTimecardsIntoExcel(args, minutesWorked) {
         });
         let timeWorked = minutesWorked/60;
         let OTWorked = 0;
-        let workWeek = isHoliday ? 32 : 40;
-        if (workWeek < timeWorked) {
-            OTWorked += timeWorked - workWeek;
-            timeWorked = workWeek;
+        if (numHrsInWorkWeek < timeWorked) {
+            OTWorked += timeWorked - numHrsInWorkWeek;
+            timeWorked = numHrsInWorkWeek;
         }
-        const rowValues = [user, formattedDate,'Need to do this still',`Clocked Hours`,'Work Hrs.',timeWorked]
-        const OTRowValues = [user, formattedDate,'Need to do this still',`Overtime Hours`,'OT Hrs.',OTWorked]
+        const rowValues = [user, formattedDate,'Need to do this still',`Clocked Hours`,'Work Hrs.',timeWorked, `uniqueid: ${Date.now()}`]
+        const OTRowValues = [user, formattedDate,'Need to do this still',`Overtime Hours`,'OT Hrs.',OTWorked, `uniqueid: ${Date.now()}`]
         const letters = ['A','B','C','D','E','F','G','H','I'];
         for (let i = 0; i < letters.length; i++) {
             if (rowValues[i] !== undefined) {
@@ -94,9 +94,12 @@ async function pushTimecardsIntoExcel(args, minutesWorked) {
     }
 }
 
-let args = process.argv.slice(2);
-// const args = ['Judah Helland', 'C:/Users/judah/Timecards_and_Reimbursements(copy).xlsx', 'placeholder', 'Holiday']
+// let args = process.argv.slice(2);
+const args = ['Judah Helland', '40', "C:/Users/judah/OneDrive - McMahan TECH LLC/Documents - Operations/Expenses/Timecards and Reimbursements.xlsx", 'placeholder', 'Holiday']
 
 getTimecardsFromSyncro(args)
 
-//TODO: parameterize the exact number of hours that way it can be set to whatever.
+//TODO:
+//Allow filtering based on employee
+//does it work for somebody working over midnight?
+//flags for excessive hours
